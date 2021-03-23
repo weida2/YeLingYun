@@ -6,22 +6,99 @@ char Token_Text[256] = {'\0'};   //保存变量名或者函数名
 char tokentext;  //
 char Type[256];   //保存类型说明符
 int line_count = 0;   // 行数计时器
-int error;
+KeyType error;
 int flag;
+int count_Formal_Var_List = 0;
+int count_ExtDefList = 0;
 FILE *fp2;
 
 
-KeyType Key[N] = {{"ID", 0}, {"INT", 1}, {"auto", 2}, {"break", 3}, {"case", 4}, {"char", 5}, {"const", 6}, {"continue", 7}, {"default", 8}, {"do", 9}, {"double", 10},
-{"else", 11}, {"enum", 12}, {"extern", 13}, {"float", 14}, {"for", 15}, {"goto", 16}, {"if", 17}, {"int", 18}, {"long", 19}, {"register", 20},
-{"return", 21}, {"short", 22}, {"signed", 23}, {"sizeof", 24}, {"static", 25}, {"struct", 26}, {"switch", 27}, {"typedef", 28}, {"union", 29}, {"unsigned", 30},
-{"void", 31}, {"volatile", 32}, {"while", 33}, {"=", 34}, {"+", 35}, {"-", 36}, {"*", 37}, {"/", 38}, {"%", 39}, {"==", 40},
-{">=", 41}, {"<=", 42}, {"&&", 43}, {"||", 44}, {";", 45}, {"(", 46}, {")", 47}, {"#", 48}, {">", 49}, {"<", 50},
-{"{", 51}, {"}", 52}, {",",53}, {"//", 54}};
+KeyType Key[N] = {{"ID",       0},
+                  {"INT",      1},
+                  {"auto",     2},
+                  {"break",    3},
+                  {"case",     4},
+                  {"char",     5},
+                  {"const",    6},
+                  {"continue", 7},
+                  {"default",  8},
+                  {"do",       9},
+                  {"double",   10},
+                  {"else",     11},
+                  {"enum",     12},
+                  {"extern",   13},
+                  {"float",    14},
+                  {"for",      15},
+                  {"goto",     16},
+                  {"if",       17},
+                  {"int",      18},
+                  {"long",     19},
+                  {"register", 20},
+                  {"return",   21},
+                  {"short",    22},
+                  {"signed",   23},
+                  {"sizeof",   24},
+                  {"static",   25},
+                  {"struct",   26},
+                  {"switch",   27},
+                  {"typedef",  28},
+                  {"union",    29},
+                  {"unsigned", 30},
+                  {"void",     31},
+                  {"volatile", 32},
+                  {"while",    33},
+                  {"=",        34},
+                  {"+",        35},
+                  {"-",        36},
+                  {"*",        37},
+                  {"/",        38},
+                  {"%",        39},
+                  {"==",       40},
+                  {">=",       41},
+                  {"<=",       42},
+                  {"&&",       43},
+                  {"||",       44},
+                  {";",        45},
+                  {"(",        46},
+                  {")",        47},
+                  {"#",        48},
+                  {">",        49},
+                  {"<",        50},
+                  {"{",        51},
+                  {"}",        52},
+                  {",",        53},
+                  {"//",       54}};
 
+KeyType Error_Type[N]{{"error_program",           0},
+                      {"error_ExtDefList",        1},
+                      {"error_ExtDef",            2},
+                      {"error_ExtVarDef",         3},
+                      {"error_TypeName",          4},
+                      {"error_ExtVarList",        5},
+                      {"error_VarName",           6},
+                      {"error_FuncDef",           7},
+                      {"error_FuncName",          8},
+                      {"error_FuncStruct",        9},
+                      {"error_Formal_Var_List",   10},
+                      {"error_Formal_Var",        11},
+                      {"error_ComplexStatement",  12},
+                      {"error_LocalVarDefList",   13},
+                      {"error_LocalVarDef",       14},
+                      {"error_Statement_List",    15},
+                      {"error_Statement",         16},
+                      {"error_if_else_statement", 17},
+                      {"error_while_statement",   18},
+                      {"error_for_statement",     19},
+                      {"error_return_statement",  20},
+                      {"error_break_statement",   21}};
 /* --------------------------------------------------------
  * ---------------------词法分析部分------------------------
  * -------------------------------------------------------*/
 
+/*enum ERROR {error_program, error_ExtDefList, error_ExtDef, error_ExtVarDef, error_TypeName, error_ExtVarList, error_VarName,
+            error_FuncDef, error_FuncName, error_FuncStruct, error_Formal_Var_List, error_Formal_Var, error_ComplexStatement,
+            error_LocalVarDefList, error_LocalVarDef, error_Statement_List, error_Statement, error_if_else_statement,
+            error_while_statement, error_for_statement, error_return_statement, error_break_statement}; // 错误标记 */
 
 KeyType ReturnWord(); // 返回一个单词的种类码和自身值
 void GetChar();        // 读取一个字符到ch中
@@ -312,33 +389,35 @@ AST_Node_program *program()
     fclose(fp2);
     if (root_program->child_ExtDefList != NULL) return root_program;
     else{
-        error = error_program;
+        error = Error_Type[0];
         return root_program;
     }
 }
 
 AST_Node_ExtDefList *ExtDefList()  // 45是分号 47是右括号
 {
+    count_ExtDefList++;
     if (w.value == 54) return NULL;  // 如果w读到文件结束最后一个字符
     AST_Node_ExtDefList *root_ExtDefList;
     root_ExtDefList = (AST_Node_ExtDefList *)malloc(sizeof (AST_Node_ExtDefList));
     root_ExtDefList->child_ExtDef = ExtDef();
+    if (root_ExtDefList->child_ExtDef == NULL) return NULL;
     root_ExtDefList->child_ExtDefList = ExtDefList();
     return root_ExtDefList;
 }
 
 void *ExtDef()
 {
-    if (!(w.value >= 2 && w.value <= 33))  //w不是类型关键字
+    if (!(w.value == 5 || w.value == 10 || w.value == 14 || w.value == 18))  //w不是类型关键字
     {
-        error = error_ExtDef;
+        error = Error_Type[2];
         return NULL;
     }
     strcpy(Type, w.keyname); //保存类型说明符
     w = ReturnWord();  // w = i
     if (w.value != 0) //如果w不是标识符报错
     {
-        error = error_ExtDef;
+        error = Error_Type[2];
         return NULL;
     }
     strcpy(Token_Text, w.keyname);  //保存第一个变量名或者函数名到Token_Text
@@ -371,7 +450,7 @@ AST_Node_ExtVarList *ExtVarList()
   //  w = ReturnWord();  // w = ,
     if (w.value != 53 && w.value != 45)  // 如果 w != , && w != ; 报错
     {
-        error = error_ExtVarList;
+        error = Error_Type[5];
         free(root_ExtVarList);
         return NULL;
     }
@@ -385,7 +464,7 @@ AST_Node_ExtVarList *ExtVarList()
     w = ReturnWord();  // w = b
     if (w.value != 0)  //如果w不是标识符
     {
-        error = error_ExtVarList;
+        error = Error_Type[5];
         free(root_ExtVarList);
         return NULL;
     }
@@ -407,6 +486,7 @@ AST_Node_ExtVarDef *ExtVarDef()
     strcpy(Type, init_array); //重新初始化Type类型名数组
     printf("\t变量名:\n");
     root_ExtVarDef->child_ExtVarList = ExtVarList();
+    if (root_ExtVarDef->child_ExtVarList == NULL) return NULL;
     return root_ExtVarDef;
 }
 
@@ -418,7 +498,7 @@ AST_Node_FuncDef *FuncDef()
     strcpy(root_FuncDef->child_TypeName->Type_Name, Type); //生成返回值类型结点，作为root的第一个孩子
     printf("\t类型:\t\t%s\n", root_FuncDef->child_TypeName->Type_Name);
     fprintf(fp2, "%s ", root_FuncDef->child_TypeName->Type_Name);
-    root_FuncDef->child_FuncName = (AST_Node_FuncName *)malloc(sizeof (AST_Node_FuncName));
+    root_FuncDef->child_FuncName = (AST_Node_FuncName *) malloc(sizeof(AST_Node_FuncName));
     strcpy(root_FuncDef->child_FuncName->Func_Name, Token_Text);  //生成函数名的结点
     printf("\t函数名:\t\t%s\n", root_FuncDef->child_FuncName->Func_Name);
     fprintf(fp2, "%s", root_FuncDef->child_FuncName->Func_Name);
@@ -427,16 +507,24 @@ AST_Node_FuncDef *FuncDef()
     printf("\t函数形参:\n");
     fprintf(fp2, "%s", w.keyname);
     root_FuncDef->child_FuncName->child_Formal_Var_List = Formal_Var_List();  // w = (
+    AST_Node_Formal_Var_List *p;
+    p = root_FuncDef->child_FuncName->child_Formal_Var_List;
+    for (int i = 0; i < count_Formal_Var_List; i++) {
+        if (!p) return NULL;
+        p = p->child_Formal_Var_List;
+    }
     root_FuncDef->child_FuncStruct = FuncStruct();
     return root_FuncDef;
 }
 
 AST_Node_Formal_Var_List *Formal_Var_List()
 {
+    count_Formal_Var_List++;
     AST_Node_Formal_Var_List *root_Formal_Var_List;
     root_Formal_Var_List = (AST_Node_Formal_Var_List *)malloc(sizeof (AST_Node_Formal_Var_List));
     root_Formal_Var_List->child_Formal_Var = (AST_Node_Formal_Var *)malloc(sizeof (AST_Node_Formal_Var));
     root_Formal_Var_List->child_Formal_Var = Formal_Var();  //第一颗子树
+    if (root_Formal_Var_List->child_Formal_Var == NULL) return NULL;
     if (w.value == 47) return root_Formal_Var_List;
     w = ReturnWord();  // 结束符 )
     if (w.value == 53) {
@@ -453,9 +541,9 @@ AST_Node_Formal_Var *Formal_Var()
     root_Formal_Var = (AST_Node_Formal_Var *)malloc(sizeof (AST_Node_Formal_Var));
     w = ReturnWord();  // 相当于 w = int
   //  if (w.value == 47)
-    if (!(w.value >= 2 && w.value <= 33))  //w不是类型关键字
+    if (!(w.value == 5 || w.value == 10 || w.value == 14 || w.value == 18))  //w不是类型关键字
     {
-        error = error_Formal_Var;
+        error = Error_Type[11];
         return NULL;
     }
     root_Formal_Var->child_TypeName = (AST_Node_TypeName *)malloc(sizeof (AST_Node_TypeName));
@@ -463,7 +551,7 @@ AST_Node_Formal_Var *Formal_Var()
     w = ReturnWord(); // w = a
     if (w.value != 0)  //如果w不是标识符
     {
-        error = error_Formal_Var;
+        error = Error_Type[11];
         free(root_Formal_Var);
         return NULL;
     }
@@ -510,7 +598,7 @@ AST_Node_ComplexStatement *ComplexStatement()  //到复合语句时 已经读到
     root_ComplexStatement->child_Statement_List = (AST_Node_Statement_List *)malloc(sizeof (AST_Node_Statement_List));
     root_ComplexStatement->child_Statement_List = Statement_List();
     if (w.value != 52) {
-        error = error_ComplexStatement;
+        error = Error_Type[12];
         free(root_ComplexStatement);
         return NULL;
     }
@@ -557,7 +645,7 @@ AST_Node_LocalVarName_List *LocalVarName_List()
     w = ReturnWord();
     if (w.value != 53 && w.value != 45)  // 如果 w != , && w != ;
     {
-        error = error_ExtVarList;
+        error = Error_Type[14];
         free(root_LocalVarName_List);
         return NULL;
     }
@@ -571,7 +659,7 @@ AST_Node_LocalVarName_List *LocalVarName_List()
     w = ReturnWord();  // w = 局部变量的第二个变量名
     if (w.value != 0)  //如果w不是标识符
     {
-        error = error_LocalVarDefList;
+        error = Error_Type[14];
         free(root_LocalVarName_List);
         return NULL;
     }
@@ -589,7 +677,7 @@ AST_Node_Statement_List *Statement_List()
     r1 = Statement();
     if (r1 == NULL)  //没有分析到第一条语句,error>0处理错误，否则表示语句序列已经结束
     {
-        error = error_Statement_List;
+        error = Error_Type[15];
         return NULL;
     }
     else
@@ -612,7 +700,7 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             w = ReturnWord(); // w = (
             if (w.value != 46)
             {
-                error = error_Statement;
+                error = Error_Type[16];
                 return NULL;
             }
             fprintf(fp2, "%s", w.keyname);
@@ -623,25 +711,30 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             root_if_else_statement->child_condition = (AST_Node_expression *)malloc(sizeof (AST_Node_expression));
             root_if_else_statement->child_condition = expression();
             printf("\t\t\tIF字句\n");
-            root_if_else_statement->child_if_expression = (AST_Node_expression *)malloc(sizeof (AST_Node_expression));
+            root_if_else_statement->child_if_expression = (AST_Node_expression *) malloc(sizeof(AST_Node_expression));
             fprintf(fp2, "\t\t");
             root_if_else_statement->child_if_expression = expression();
             printf("\t\t\tELSE字句\n");
-            root_if_else_statement->child_else_expression = (AST_Node_expression *)malloc(sizeof (AST_Node_expression));
+            root_if_else_statement->child_else_expression = (AST_Node_expression *) malloc(sizeof(AST_Node_expression));
             root_if_else_statement->child_else_expression = expression();
-            root_Statement->child_if_else_statement = (if_else_statement *)malloc(sizeof (if_else_statement));
+            root_Statement->child_if_else_statement = (if_else_statement *) malloc(sizeof(if_else_statement));
             root_Statement->child_if_else_statement = root_if_else_statement;
             return root_Statement;
         case 33: // while语句
+            fprintf(fp2, "\t%s", w.keyname);
+            printf("\t\t while语句:\n");
             w = ReturnWord(); // w = (
             if (w.value != 46) {
-                error = error_Statement;
+                error = Error_Type[16];
                 return NULL;
             }
+            fprintf(fp2, "%s", w.keyname);
             w = ReturnWord(); // w = a
             while_statement *root_while_statement;
-            root_while_statement = (while_statement *)malloc(sizeof (while_statement));
+            root_while_statement = (while_statement *) malloc(sizeof(while_statement));
+            printf("\t\t\t条件:\n");
             root_while_statement->child_condition = expression();
+            fprintf(fp2, "\t\t");
             root_while_statement->child_expression = expression();
             root_Statement->child_while_statement = root_while_statement;
             return root_Statement;
@@ -659,7 +752,7 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             root_Statement->child_return_statement = root_return_statement;
             w = ReturnWord(); // w = ;
             if (w.value != 45) {
-                error = error_Statement;
+                error = Error_Type[16];
                 return NULL;
             }
             fprintf(fp2, "%s\r\n", w.keyname);
@@ -672,7 +765,7 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             fprintf(fp2, "%s\r\n", w.keyname);
             return NULL;
         default:
-            error = error_Statement;
+            error = Error_Type[16];
             return NULL;
     }
 }

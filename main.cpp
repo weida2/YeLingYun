@@ -50,20 +50,19 @@ int main()          // 主程序 交互菜单界面
                     }
                     AST_Node_program *begin;
                     begin = program();
-                    if (begin == NULL) {
-                        printf("程序为空, 退出程序\n");
-                        goto A;
+                    if (error.value == Error_Type[2].value) {
+                        printf("外部定义部分出错， 退出程序\n");
+                        break;
                     }
-                    if (begin->child_ExtDefList == NULL){
-                        printf("外部定义序列为空，退出程序\n");
-                        goto A;
+                    if (error.value == Error_Type[5].value) {
+                        printf("外部变量定义部分出错， 退出程序\n");
+                        break;
                     }
-                    if (begin->child_ExtDefList->child_ExtDef == NULL){
-                        printf("外部定义出错，退出程序\n");
-                        goto A;
+                    if (error.value == Error_Type[11].value) {
+                        printf("函数形参部分出错， 退出程序\n");
+                        break;
                     }
-
-A:                    break;
+                    break;
                 case 0:
                     printf("---------------退出成功！---------------\n");
                     printf("-----------欢迎下次使用本系统！-----------\n");

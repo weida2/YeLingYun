@@ -19,10 +19,10 @@ typedef struct Word{
     struct Word *next;
 }Word;
 
-enum ERROR {error_program, error_ExtDefList, error_ExtDef, error_ExtVarDef, error_TypeName, error_ExtVarList, error_VarName,
+/*enum ERROR {error_program, error_ExtDefList, error_ExtDef, error_ExtVarDef, error_TypeName, error_ExtVarList, error_VarName,
             error_FuncDef, error_FuncName, error_FuncStruct, error_Formal_Var_List, error_Formal_Var, error_ComplexStatement,
             error_LocalVarDefList, error_LocalVarDef, error_Statement_List, error_Statement, error_if_else_statement,
-            error_while_statement, error_for_statement, error_return_statement, error_break_statement}; // 错误标记
+            error_while_statement, error_for_statement, error_return_statement, error_break_statement}; // 错误标记 */
 /* --------------------------------------------------------
  * ---------------------结点域结构定义-----------------------
  * -------------------------------------------------------*/
