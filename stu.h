@@ -10,6 +10,9 @@ KeyType error;
 int flag;
 int count_Formal_Var_List = 0;
 int count_ExtDefList = 0;
+int count_LocalVarDef_List = 0;
+int count_Statement_List = 0;
+int mark = 0;
 FILE *fp2;
 
 
@@ -514,6 +517,7 @@ AST_Node_FuncDef *FuncDef()
         p = p->child_Formal_Var_List;
     }
     root_FuncDef->child_FuncStruct = FuncStruct();
+    if (root_FuncDef->child_FuncStruct == NULL) return NULL;
     return root_FuncDef;
 }
 
@@ -562,20 +566,24 @@ AST_Node_Formal_Var *Formal_Var()
     return root_Formal_Var;
 }
 
-AST_Node_FuncStruct *FuncStruct()
-{
+AST_Node_FuncStruct *FuncStruct() {
     AST_Node_FuncStruct *root_FuncStruct;
-    root_FuncStruct = (AST_Node_FuncStruct *)malloc(sizeof (AST_Node_FuncStruct));
+    root_FuncStruct = (AST_Node_FuncStruct *) malloc(sizeof(AST_Node_FuncStruct));
     fprintf(fp2, "%s\r\n", w.keyname);
     w = ReturnWord(); // w = {
     if (w.value == 45) {
         fprintf(fp2, "%s\r\n", w.keyname);
         return NULL; //如果w是分号，就是函数原型声明，函数体子树为空
     }
+    if (w.value != 51) {
+        error = Error_Type[9];
+        return NULL;
+    }
     fprintf(fp2, "%s\r\n", w.keyname);
     printf("\t复合语句:\n");
-    root_FuncStruct->child_ComplexStatement = (AST_Node_ComplexStatement *)malloc(sizeof (AST_Node_ComplexStatement));
+    root_FuncStruct->child_ComplexStatement = (AST_Node_ComplexStatement *) malloc(sizeof(AST_Node_ComplexStatement));
     root_FuncStruct->child_ComplexStatement = ComplexStatement();
+    if (root_FuncStruct->child_ComplexStatement == NULL) return NULL;
     return root_FuncStruct;
 }
 
@@ -587,16 +595,28 @@ AST_Node_ComplexStatement *ComplexStatement()  //到复合语句时 已经读到
     if (w.value == 5 || w.value == 10 || w.value == 14 || w.value == 18) //w 是类型关键字 int float char double
     {
         printf("\t\t复合语句的变量定义:\n");
-        root_ComplexStatement->child_LocalVarDef_List = (AST_Node_LocalVarDef_List *)malloc(sizeof (AST_Node_LocalVarDef_List));
+        root_ComplexStatement->child_LocalVarDef_List = (AST_Node_LocalVarDef_List *) malloc(
+                sizeof(AST_Node_LocalVarDef_List));
         root_ComplexStatement->child_LocalVarDef_List = LocalVarDef_List();
-    }
-    else
-    {
+        AST_Node_LocalVarDef_List *p;
+        p = root_ComplexStatement->child_LocalVarDef_List;
+        for (int i = 0; i < count_LocalVarDef_List; i++) {
+            if (!p) return NULL;
+            p = p->child_LocalVarDef_List;
+        }
+    } else {
+        //    error = Error_Type[12];
         root_ComplexStatement->child_LocalVarDef_List = NULL;
     }
     printf("\t\t复合语句的语句部分:\n");
-    root_ComplexStatement->child_Statement_List = (AST_Node_Statement_List *)malloc(sizeof (AST_Node_Statement_List));
+    root_ComplexStatement->child_Statement_List = (AST_Node_Statement_List *) malloc(sizeof(AST_Node_Statement_List));
     root_ComplexStatement->child_Statement_List = Statement_List();
+    AST_Node_Statement_List *p;
+    p = root_ComplexStatement->child_Statement_List;
+    for (int i = 0; i < count_Statement_List; i++) {
+        if (!p) return NULL;
+        p = p->child_Statement_List;
+    }
     if (w.value != 52) {
         error = Error_Type[12];
         free(root_ComplexStatement);
@@ -606,29 +626,46 @@ AST_Node_ComplexStatement *ComplexStatement()  //到复合语句时 已经读到
     return root_ComplexStatement;
 }
 
-AST_Node_LocalVarDef_List *LocalVarDef_List()
-{
+AST_Node_LocalVarDef_List *LocalVarDef_List() {
+    count_LocalVarDef_List++;
     AST_Node_LocalVarDef_List *root_LocalVarDef_List;
-    root_LocalVarDef_List = (AST_Node_LocalVarDef_List *)malloc(sizeof (AST_Node_LocalVarDef_List));
-    root_LocalVarDef_List->child_LocalVarDef = (AST_Node_LocalVarDef *)malloc(sizeof (AST_Node_LocalVarDef));
+    root_LocalVarDef_List = (AST_Node_LocalVarDef_List *) malloc(sizeof(AST_Node_LocalVarDef_List));
+    root_LocalVarDef_List->child_LocalVarDef = (AST_Node_LocalVarDef *) malloc(sizeof(AST_Node_LocalVarDef));
     root_LocalVarDef_List->child_LocalVarDef = LocalVarDef();
+    if (root_LocalVarDef_List->child_LocalVarDef == NULL) {
+        free(root_LocalVarDef_List);
+        return NULL;
+    }
+    if (w.value == 5 || w.value == 10 || w.value == 14 || w.value == 18)
+        root_LocalVarDef_List->child_LocalVarDef_List = LocalVarDef_List(); //w是类型关键字
     return root_LocalVarDef_List;
 }
 
-AST_Node_LocalVarDef *LocalVarDef()
-{
+AST_Node_LocalVarDef *LocalVarDef() {
     AST_Node_LocalVarDef *root_LocalVarDef;
-    root_LocalVarDef = (AST_Node_LocalVarDef *)malloc(sizeof (AST_Node_LocalVarDef));
+    root_LocalVarDef = (AST_Node_LocalVarDef *) malloc(sizeof(AST_Node_LocalVarDef));
     strcpy(Type, w.keyname);
-    root_LocalVarDef->child_TypeName = (AST_Node_TypeName *)malloc(sizeof (AST_Node_TypeName));
+    root_LocalVarDef->child_TypeName = (AST_Node_TypeName *) malloc(sizeof(AST_Node_TypeName));
     strcpy(root_LocalVarDef->child_TypeName->Type_Name, Type);  //生成外部变量类型的结点，作为root的第一个孩子
     printf("\t\t\t类型:\t\t%s\n", root_LocalVarDef->child_TypeName->Type_Name);
     fprintf(fp2, "\t%s ", root_LocalVarDef->child_TypeName->Type_Name);
     strcpy(Type, init_array); //重新初始化Type类型名数组
     w = ReturnWord(); // w = m
+    if (w.value != 0)  //w不是标识符
+    {
+        error = Error_Type[14];
+        free(root_LocalVarDef);
+        return NULL;
+    }
     printf("\t\t\t局部变量名:\n");
-    root_LocalVarDef->child_LocalVarName_List = (AST_Node_LocalVarName_List *)malloc(sizeof (AST_Node_LocalVarName_List));
+    root_LocalVarDef->child_LocalVarName_List = (AST_Node_LocalVarName_List *) malloc(
+            sizeof(AST_Node_LocalVarName_List));
     root_LocalVarDef->child_LocalVarName_List = LocalVarName_List();
+    if (root_LocalVarDef->child_LocalVarName_List == NULL) {
+        error = Error_Type[14];
+        free(root_LocalVarDef);
+        return NULL;
+    }
     return root_LocalVarDef;
 }
 
@@ -669,20 +706,21 @@ AST_Node_LocalVarName_List *LocalVarName_List()
     return root_LocalVarName_List;
 }
 
-AST_Node_Statement_List *Statement_List()
-{
+AST_Node_Statement_List *Statement_List() {
+    count_Statement_List++;
     AST_Node_Statement_List *root_Statement_List;
-    root_Statement_List = (AST_Node_Statement_List *)malloc(sizeof (AST_Node_Statement_List));
+    root_Statement_List = (AST_Node_Statement_List *) malloc(sizeof(AST_Node_Statement_List));
     AST_Node_Statement *r1;
     r1 = Statement();
-    if (r1 == NULL)  //没有分析到第一条语句,error>0处理错误，否则表示语句序列已经结束
+    if (r1 == NULL && mark == 1) {
+        return root_Statement_List;
+    } else if (r1 == NULL && mark == 0)  //没有分析到第一条语句,error>0处理错误，否则表示语句序列已经结束
     {
         error = Error_Type[15];
+        free(root_Statement_List);
         return NULL;
-    }
-    else
-    {
-        root_Statement_List->child_Statement = (AST_Node_Statement *)malloc(sizeof (AST_Node_Statement));
+    } else {
+        root_Statement_List->child_Statement = (AST_Node_Statement *) malloc(sizeof(AST_Node_Statement));
         root_Statement_List->child_Statement = r1;
         root_Statement_List->child_Statement_List = Statement_List();
         return root_Statement_List;
@@ -698,25 +736,40 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             fprintf(fp2, "\t%s", w.keyname);
             printf("\t\t 条件语句(IF_THEN_ELSE):\n");
             w = ReturnWord(); // w = (
-            if (w.value != 46)
-            {
-                error = Error_Type[16];
+            if (w.value != 46) {
+                error = Error_Type[15];
+                free(root_Statement);
                 return NULL;
             }
             fprintf(fp2, "%s", w.keyname);
             w = ReturnWord(); // w = a
             if_else_statement *root_if_else_statement;
-            root_if_else_statement = (if_else_statement *)malloc(sizeof (if_else_statement));
+            root_if_else_statement = (if_else_statement *) malloc(sizeof(if_else_statement));
             printf("\t\t\t条件:\n");
-            root_if_else_statement->child_condition = (AST_Node_expression *)malloc(sizeof (AST_Node_expression));
+            root_if_else_statement->child_condition = (AST_Node_expression *) malloc(sizeof(AST_Node_expression));
             root_if_else_statement->child_condition = expression();
+            if (root_if_else_statement->child_condition == NULL) {
+                error = Error_Type[15];
+                free(root_Statement);
+                return NULL;
+            }
             printf("\t\t\tIF字句\n");
             root_if_else_statement->child_if_expression = (AST_Node_expression *) malloc(sizeof(AST_Node_expression));
             fprintf(fp2, "\t\t");
             root_if_else_statement->child_if_expression = expression();
+            if (root_if_else_statement->child_if_expression == NULL) {
+                error = Error_Type[15];
+                free(root_Statement);
+                return NULL;
+            }
             printf("\t\t\tELSE字句\n");
             root_if_else_statement->child_else_expression = (AST_Node_expression *) malloc(sizeof(AST_Node_expression));
             root_if_else_statement->child_else_expression = expression();
+            if (root_if_else_statement->child_else_expression == NULL) {
+                error = Error_Type[15];
+                free(root_Statement);
+                return NULL;
+            }
             root_Statement->child_if_else_statement = (if_else_statement *) malloc(sizeof(if_else_statement));
             root_Statement->child_if_else_statement = root_if_else_statement;
             return root_Statement;
@@ -725,7 +778,7 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             printf("\t\t while语句:\n");
             w = ReturnWord(); // w = (
             if (w.value != 46) {
-                error = Error_Type[16];
+                error = Error_Type[15];
                 return NULL;
             }
             fprintf(fp2, "%s", w.keyname);
@@ -752,7 +805,7 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             root_Statement->child_return_statement = root_return_statement;
             w = ReturnWord(); // w = ;
             if (w.value != 45) {
-                error = Error_Type[16];
+                error = Error_Type[15];
                 return NULL;
             }
             fprintf(fp2, "%s\r\n", w.keyname);
@@ -763,9 +816,10 @@ AST_Node_Statement *Statement() // w = if 或者 for while
             return root_Statement;
         case 52: // }语句序列结束符号
             fprintf(fp2, "%s\r\n", w.keyname);
+            mark = 1;
             return NULL;
         default:
-            error = Error_Type[16];
+            error = Error_Type[15];
             return NULL;
     }
 }

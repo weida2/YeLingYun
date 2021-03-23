@@ -62,6 +62,18 @@ int main()          // 主程序 交互菜单界面
                         printf("函数形参部分出错， 退出程序\n");
                         break;
                     }
+                    if (error.value == Error_Type[12].value) {
+                        printf("复合语句部分出错， 退出程序\n");
+                        break;
+                    }
+                    if (error.value == Error_Type[14].value) {
+                        printf("复合语句的变量定义部分出错， 退出程序\n");
+                        break;
+                    }
+                    if (error.value == Error_Type[15].value) {
+                        printf("复合语句的语句定义部分出错， 退出程序\n");
+                        break;
+                    }
                     break;
                 case 0:
                     printf("---------------退出成功！---------------\n");

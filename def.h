@@ -103,8 +103,9 @@ typedef struct AST_Node_ComplexStatement{
 }AST_Node_ComplexStatement;
 
 //<局部变量定义序列>的结点 LocalVarDef_List
-typedef struct AST_Node_LocalVarDef_List{
+typedef struct AST_Node_LocalVarDef_List {
     struct AST_Node_LocalVarDef *child_LocalVarDef;  //指向局部变量定义的子树
+    struct AST_Node_LocalVarDef_List *child_LocalVarDef_List;   // 指向局部变量定义序列的子树
 }AST_Node_LocalVarDef_List;
 
 //<局部变量定义>的结点 LocalVarDef
